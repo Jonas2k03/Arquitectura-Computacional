@@ -1,0 +1,92 @@
+
+#include "AsyncTaskLib.h"
+#include "DHTStable.h"
+
+DHTStable DHT;
+
+#define DHT11_PIN       5
+#define led 13
+#define ledV 12
+#define DEBUG(a) Serial.print(millis()); Serial.print(": "); Serial.println(a);
+
+int outputValue = 0;
+const int photocellPin = A0;
+void readPhotoresistor(void);
+void readTemperature(void);
+
+AsyncTask asyncTask1(1000, true, readTemperature);
+AsyncTask asyncTask2(2000, true, readPhotoresistor);
+
+
+
+void setup()
+{
+  pinMode(led, OUTPUT);
+  pinMode(ledV, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("Starting");
+
+  //Serial.begin(115200);
+  Serial.println(__FILE__);
+  Serial.print("LIBRARY VERSION: ");
+  Serial.println(DHTSTABLE_LIB_VERSION);
+  Serial.println();
+  Serial.println("Type,\tstatus,\tHumidity (%),\tTemperature (C)");
+
+  asyncTask1.Start();
+  asyncTask2.Start();
+}
+
+void loop()
+{
+  asyncTask1.Update();
+  asyncTask2.Update();
+
+  
+}
+
+void readPhotoresistor(void) {
+  outputValue = analogRead(photocellPin);
+  Serial.println(outputValue);
+delay(1000);
+}
+
+void readTemperature(void) {
+  
+  Serial.print("DHT11, \t");
+  int chk = DHT.read11(DHT11_PIN);
+  switch (chk)
+  {
+    case DHTLIB_OK:  
+      Serial.print("OK,\t"); 
+      break;
+    case DHTLIB_ERROR_CHECKSUM: 
+      Serial.print("Checksum error,\t"); 
+      break;
+    case DHTLIB_ERROR_TIMEOUT: 
+      Serial.print("Time out error,\t"); 
+      break;
+    default: 
+      Serial.print("Unknown error,\t"); 
+      break;
+  }
+  // DISPLAY DATA
+
+  if (DHT.getTemperature()>=29){
+
+    digitalWrite(led, HIGH);
+    digitalWrite(ledV, LOW);
+    
+  }
+  else{
+        digitalWrite(ledV, HIGH);
+        digitalWrite(led, LOW);
+  }
+  Serial.print(DHT.getHumidity(), 1);
+  Serial.print(",\t");
+  Serial.println(DHT.getTemperature(), 1);
+
+  delay(2000);
+}
+
+
